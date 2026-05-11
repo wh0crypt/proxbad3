@@ -4,6 +4,8 @@ import argparse
 import os.path
 import sys
 
+import proxbad3.commands as commands
+
 from proxbad3.menu import menu_loop
 from proxbad3.config import Config, Frequency
 from proxmark3 import Proxmark3Adapter, Proxmark3
@@ -24,7 +26,7 @@ def setup_parser() -> argparse.ArgumentParser:
         "--high-frequency",
         dest="hf",
         help="Enable high-frequency (13.56 MHz) testing mode",
-        action="store_false",
+        action="store_true",
     )
     parser.add_argument(
         "-lf",
@@ -43,7 +45,8 @@ def make_config() -> Config:
     else:
         parser = setup_parser()
         args = parser.parse_args()
-        return Config(args.device, Frequency(0 if args.hf else 1))
+        freq = 0 if args.hf else 1
+        return Config(args.device, Frequency(freq if args.hf or args.lf else 2))
 
 
 def main() -> None:
@@ -62,7 +65,10 @@ def main() -> None:
         print("The specified device does not exist.")
         sys.exit(1)
 
-    pm3 = Proxmark3(adapter)
+    # pm3 = Proxmark3(adapter)
+
+    search = commands.hf_search(adapter)
+    print(search.data)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,12 @@ from .config import Config, Frequency
 
 def menu_loop() -> Config:
     """Set up the interactive command-line menu."""
+    config = Config()
+    config.load()
+
+    device_selected = config.device
+    freq_selected = config.freq
+
     main_menu_title = "  Main Menu.\n  Press Q or Esc to quit.\n"
     main_menu_items = ["Device", "Frequency", "Continue", "Quit"]
     main_menu_cursor = "* "
@@ -43,8 +49,8 @@ def menu_loop() -> Config:
 
     freq_menu_title = "  Frequency Menu.\n  Press Q or Esc to back to main menu.\n"
     freq_menu_items = [
-        "[_] High Frequency (HF)",
-        "[_] Low Frequency (LF)",
+        f"[{'*' if config.freq == Frequency.HF else '_'}] High Frequency (HF)",
+        f"[{'*' if config.freq == Frequency.LF else '_'}] Low Frequency (LF)",
         "Back to Main Menu",
     ]
     freq_menu_back = False
@@ -58,10 +64,7 @@ def menu_loop() -> Config:
         clear_screen=True,
     )
 
-    device_selected = None
-    freq_selected = Frequency.NONE
     main_sel = 0
-
     while not main_menu_exit:
         dev_label = device_selected.split(" - ")[0] if device_selected else "NONE"
 
@@ -84,7 +87,6 @@ def menu_loop() -> Config:
         )
 
         main_sel = main_menu.show()
-
         if main_sel is None or main_sel == 2:
             main_menu_exit = True
             continue
@@ -116,24 +118,23 @@ def menu_loop() -> Config:
                     )
 
                     device_sel = device_menu.show()
-
                     if device_sel is None or device_sel == (len(options) - 1):
                         device_menu_back = True
                     else:
-                        device_sel = cast(int, device_sel)
-                        selected_port = ports[device_sel]
-                        if device_selected == selected_port:
-                            device_selected = None
-                        else:
-                            device_selected = selected_port
+                        selected_port = ports[cast(int, device_sel)]
+                        device_selected = (
+                            None if device_selected == selected_port else selected_port
+                        )
+                        config.device = device_selected
+                        config.save()
                         device_menu_back = True
 
             case 1:  # Frequency
                 freq_menu_back = False
                 while not freq_menu_back:
                     options = [
-                        f"{'[*] ' if freq_selected == Frequency.HF else '[_] '}High Frequency (HF)",
-                        f"{'[*] ' if freq_selected == Frequency.LF else '[_] '}Low Frequency (LF)",
+                        f"[{'*' if freq_selected == Frequency.HF else '_'}] High Frequency (HF)",
+                        f"[{'*' if freq_selected == Frequency.LF else '_'}] Low Frequency (LF)",
                         "Back to Main Menu",
                     ]
 
@@ -153,14 +154,14 @@ def menu_loop() -> Config:
                     )
 
                     freq_sel = freq_menu.show()
-
                     if freq_sel is None or freq_sel == (len(freq_menu_items) - 1):
                         freq_menu_back = True
                     else:
                         new_freq = Frequency(freq_sel)
-                        if freq_selected == new_freq:
-                            freq_selected = Frequency.NONE
-                        else:
-                            freq_selected = new_freq
+                        freq_selected = (
+                            Frequency.NONE if freq_selected == new_freq else new_freq
+                        )
+                        config.freq = freq_selected
+                        config.save()
                         freq_menu_back = True
-    return Config(device_selected, freq_selected)
+    return Config(config.device, config.freq)
